@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #f5f5f5;
+    font-family: sans-serif;
+}
+.container {
+    text-align: center;
+}
+.sprite-container {
+    width: 400px;
+    height: 400px;
+    background-image: url('assets/sprite.webp');
+    background-repeat: no-repeat;
+    background-size: 3200px 4000px;
+    background-position: 0 0;
+    border-radius: 20px;
+    will-change: background-position;
+    margin: 0 auto;
+}
+.info {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+}
+.angle-display {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sprite-container" id="spriteContainer"></div>
+    <div class="info">Move your mouse to test head tracking</div>
+    <div class="angle-display" id="angleDisplay">Angle: 0° | Frame: 1</div>
+</div>
+<script>
+(function() {
+    var container = document.getElementById('spriteContainer');
+    var display = document.getElementById('angleDisplay');
+    if (!container) return;
+
+    var SPRITE_COLS = 8;
+    var TOTAL_FRAMES = 80;
+
+    var ANGLE_KEYS = {
+        0: 1, 5: 2, 10: 3, 15: 4, 20: 5, 25: 6, 30: 7, 35: 8,
+        40: 9, 45: 10, 50: 11, 55: 12, 60: 13, 65: 14, 70: 15, 75: 16,
+        80: 17, 85: 18, 90: 19, 95: 20, 100: 21, 105: 22, 110: 23, 115: 24,
+        120: 25, 125: 26, 130: 27, 135: 28, 140: 29, 145: 30, 150: 31, 155: 32,
+        160: 33, 165: 34, 170: 35, 175: 36, 180: 37, 185: 38, 190: 39, 195: 40,
+        200: 41, 205: 42, 210: 43, 215: 44, 220: 45, 225: 46, 230: 47, 235: 48,
+        240: 49, 245: 50, 250: 51, 255: 52, 260: 53, 265: 54, 270: 55, 275: 56,
+        280: 57, 285: 58, 290: 59, 295: 60, 300: 61, 305: 62, 310: 63, 315: 64,
+        320: 65, 325: 66, 330: 67, 335: 68, 340: 69, 345: 70, 350: 71, 355: 72,
+        360: 1
+    };
+
+    var sortedAngles = Object.keys(ANGLE_KEYS).map(Number).sort(function(a, b) { return a - b; });
+
+    function getFrameForAngle(angle) {
+        angle = ((angle % 360) + 360) % 360;
+        var closest = sortedAngles[0];
+        var minDiff = Math.abs(angle - closest);
+        for (var i = 1; i < sortedAngles.length; i++) {
+            var diff = Math.abs(angle - sortedAngles[i]);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = sortedAngles[i];
+            }
+        }
+        return ANGLE_KEYS[closest] - 1;
+    }
+
+    function updateFrame(frameIndex) {
+        frameIndex = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(frameIndex)));
+        var col = frameIndex % SPRITE_COLS;
+        var row = Math.floor(frameIndex / SPRITE_COLS);
+        container.style.backgroundPosition = (-col * 400) + 'px ' + (-row * 400) + 'px';
+    }
+
+    var currentAngle = 0;
+    var targetAngle = 0;
+
+    function onMouseMove(e) {
+        var rect = container.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = e.clientX - cx;
+        var dy = e.clientY - cy;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 30) {
+            targetAngle = 0;
+        } else {
+            var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            targetAngle = (angle + 90 + 360) % 360;
+        }
+    }
+
+    function animate() {
+        var diff = targetAngle - currentAngle;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+
+        if (Math.abs(diff) < 0.5) {
+            currentAngle = targetAngle;
+        } else {
+            currentAngle += diff * 0.12;
+        }
+        currentAngle = ((currentAngle % 360) + 360) % 360;
+
+        var frameIdx = getFrameForAngle(currentAngle);
+        updateFrame(frameIdx);
+
+        if (display) {
+            display.textContent = 'Angle: ' + Math.round(currentAngle) + '° | Frame: ' + (frameIdx + 1);
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    animate();
+})();
+</script>
+</body>
+</html>
